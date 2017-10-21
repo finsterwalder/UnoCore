@@ -5,7 +5,12 @@ open Game
 
 // Step 3:
 // Implement => to make the test run
-let (=>) events command = failwith "Not implemented"
+let (=>) events command = 
+//    let state = List.fold evolve InitialState events
+//    decide command state
+    events
+    |> List.fold evolve InitialState
+    |> decide command
 
 let (==) result expected =
     Expect.equal result (Ok expected) "Should equal expected"
@@ -29,7 +34,7 @@ let tests =
     testCase "Playing alone is not fun" <| fun _ ->
       []
       => StartGame { Players = PlayerCount 1; FirstCard = Digit( Seven, Yellow)}
-      //=! TooFewPlayers
+      =! TooFewPlayers
       
 
     // Step 6:
@@ -43,26 +48,51 @@ let tests =
     // Step 7:
     // Make this two tests pass... doing the simplest thing that work
     testCase "Card with same value can be played" <| fun _ ->
-        failwith "Not implemented"
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Digit(Nine, Yellow) } ]
+        => PlayCard { Player = PlayerId 0; Card = Digit(Nine, Green)}
+        == [CardPlayed { Player = PlayerId 0; Card = Digit(Nine, Green)}; PlayerChanged { Player = PlayerId 1} ]
 
     testCase "Card with same color can be played" <| fun _ ->
-        failwith "Not implemented"
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Digit(Nine, Yellow) } ]
+        => PlayCard { Player = PlayerId 0; Card = Digit(Six, Yellow)}
+        == [CardPlayed { Player = PlayerId 0; Card = Digit(Six, Yellow) }; PlayerChanged { Player = PlayerId 1} ]
+
+    testCase "Card with same color can be played after second card" <| fun _ ->
+        [ GameStarted { Players=PlayerCount 3; FirstCard = Digit(Nine, Yellow) };  CardPlayed { Player = PlayerId 0; Card = Digit(Six, Yellow)}; PlayerChanged { Player = PlayerId 1} ]
+        => PlayCard { Player = PlayerId 1; Card = Digit(Nine, Red)}
+        == [WrongCardPlayed { Player = PlayerId 1; Card = Digit(Nine, Red)}; PlayerChanged { Player = PlayerId 2} ]
+
+    testCase "Skip with same color can be played" <| fun _ ->
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Digit(Nine, Yellow) } ]
+        => PlayCard { Player = PlayerId 0; Card = Skip(Yellow)}
+        == [CardPlayed { Player = PlayerId 0; Card = Skip(Yellow)}; PlayerChanged { Player = PlayerId 1} ]
+
+    testCase "Digit with same color after Skip can be played" <| fun _ ->
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Skip(Red) } ]
+        => PlayCard { Player = PlayerId 0; Card = Digit(Nine, Red)}
+        == [CardPlayed { Player = PlayerId 0; Card = Digit(Nine, Red)}; PlayerChanged { Player = PlayerId 1} ]
 
     // Step 8:
     // Make this test pass
     testCase "Card can be played only once game is started" <| fun _ ->
-        failwith "Not implemented"
+        []
+        => PlayCard { Player = PlayerId 1; Card = Digit(Six, Yellow)}
+        =! GameNotStarted
 
     // Step 9:
     // What happens here ?!
     testCase "Card should be same color or same value" <| fun _ ->
-        failwith "Not implemented"
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Digit(Nine, Yellow) } ]
+        => PlayCard { Player = PlayerId 0; Card = Digit(Six, Green)}
+        == [WrongCardPlayed { Player = PlayerId 0; Card = Digit(Six, Green)}; PlayerChanged { Player = PlayerId 1} ]
       // ...
 
     // Step 10:
     // What happens here ?!
     testCase "Player should play during his turn" <| fun _ ->
-        failwith "Not implemented"
+        [ GameStarted { Players=PlayerCount 2; FirstCard = Digit(Nine, Yellow) } ]
+        => PlayCard { Player = PlayerId 2; Card = Digit(Six, Green)}
+        == [WrongPlayer { Player = PlayerId 2 }]
 
     // Step 11:
     // Testing a full round
